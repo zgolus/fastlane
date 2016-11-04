@@ -12,13 +12,14 @@ function swimmer:new(x, color, num)
   s.anim.right = 2
   s.spr = s.anim.idle
   s.x = x
-  s.y = 238
+  s.y = 246
   s.speed = 10
   s.left = false
   s.right = false
   s.dir = 'n'
   s.color = color
   s.num = num
+  s.flip = false
   self.__index = self
   return setmetatable(s, self)
 end
@@ -32,15 +33,42 @@ function swimmer:update()
     self.right = true
     self.spr = self.anim.right
   end
+  -- god mode start
+  if btnp(2, self.num) then
+    self.left = true
+    self.right = true
+  end
+  -- god mode end
+  if btnp(4, self.num) and self:at_checkpoint() then
+    self.flip = true
+    self.speed = -self.speed
+  end
 
   if self.left and self.right then
-    self.y -= self.speed
     self.left = false
     self.right = false
-    if (self.y - cam.y < 16 and cam.y >= 0) then
-      cam.y -= self.speed
+    if self:can_move() then
+      self.y -= self.speed
+      if self.flip then
+        if (self.y - cam.y > 96 and cam.y <= 136) then
+          cam:move(-self.speed)
+        end
+      else
+        if (self.y - cam.y < 32 and cam.y >= 0) then
+          cam:move(-self.speed)
+        end
+      end
     end
   end
+end
+
+function swimmer:at_checkpoint()
+  return self.y == 16
+end
+
+function swimmer:can_move()
+  printh(self.y)
+  return self.y - self.speed >= 14
 end
 
 s1 = swimmer:new(14, 8, 0)
@@ -56,7 +84,15 @@ add(swimmers, s4)
 
 cam = {}
 cam.x = 0
-cam.y = 128
+cam.y = 144
+
+function cam:move(distance)
+  if self.y + distance >= 0 then
+    self.y += distance
+  else
+    self.y = 0
+  end
+end
 
 function _init()
 end
@@ -69,17 +105,20 @@ end
 
 function _draw()
   cls()
+  rectfill(0,0,128,8,5)
+  print('('..cam.x..', '..cam.y..')', 10, 1, 7)
+  clip(0,8,128,112)
+  rectfill(0, 0, 128, 128, 10)
   camera(cam.x, cam.y)
-  map(0, 0, 0, 0, 16, 32)
+  map(0, 0, 0, 8, 16, 32)
 
   for s in all(swimmers) do
     pal(8, s.color)
-    spr(s.spr, s.x, s.y)
+    spr(s.spr, s.x, s.y, 1, 1, false, s.flip)
     pal()
   end
 
   camera()
-  print('('..cam.x..', '..cam.y..')', 10, 10, 7)
 end
 
 __gfx__
